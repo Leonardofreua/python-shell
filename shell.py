@@ -15,6 +15,7 @@ class Command(Enum):
     RM = "rm"
     EXIT = "exit"
     CLEAR = "clear"
+    HISTORY = "history"
 
 
 class LsArguments(Enum):
@@ -30,6 +31,40 @@ class Permissions:
     OWNER = [stat.S_IRUSR, stat.S_IWUSR, stat.S_IXUSR]
     GROUP = [stat.S_IRGRP, stat.S_IWGRP, stat.S_IXGRP]
     OTHERS = [stat.S_IROTH, stat.S_IWOTH, stat.S_IXOTH]
+
+
+class History:
+    HISTORY_FILE_PATH = "./.history_shell"
+
+    @classmethod
+    def init(cls):
+        open(cls.HISTORY_FILE_PATH, "a").close()
+
+    @classmethod
+    def write_history(cls, source_command: str) -> None:
+        with open(cls.HISTORY_FILE_PATH, "a") as history:
+            history.write(f"{datetime.now().timestamp()}:{source_command}\n")
+            history.flush()
+
+    @classmethod
+    def is_not_equal_last_history_record(cls, source_command: str) -> bool:
+        if os.stat(cls.HISTORY_FILE_PATH).st_size == 0 or not source_command:
+            return True
+
+        with open(cls.HISTORY_FILE_PATH, "rb") as history:
+            try:
+                history.seek(-2, os.SEEK_END)
+                while history.read(1) != b"\n":
+                    history.seek(-2, os.SEEK_CUR)
+            except OSError:
+                history.seek(0)
+            return history.readline().decode().split(":")[1].strip() != source_command
+
+    @classmethod
+    def show(cls):
+        with open(cls.HISTORY_FILE_PATH, "r") as history:
+            for index, value in enumerate(history.readlines()):
+                print(f"{index}  {value.split(':')[1].strip()}")
 
 
 class Parser:
@@ -99,6 +134,10 @@ class CommandManager:
     @staticmethod
     def pwd() -> None:
         print(Path.cwd())
+
+    @staticmethod
+    def history():
+        History.show()
 
     def cd(self, argument_path: list[str] = []) -> None:
         path = "".join(argument_path) if argument_path else str(Path.home())
@@ -200,12 +239,15 @@ class CommandManager:
 
 
 def main() -> None:
+    History().init()
     while True:
         source_command = input("% ")
         parser = Parser(source_command)
-
         command_manager = CommandManager(parser)
         command_manager.run()
+
+        if History.is_not_equal_last_history_record(source_command):
+            History.write_history(source_command)
 
 
 if __name__ == "__main__":
