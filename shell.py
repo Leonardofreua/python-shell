@@ -12,7 +12,6 @@ class Command(Enum):
     CD = "cd"
     PWD = "pwd"
     LS = "ls"
-    RM = "rm"
     EXIT = "exit"
     CLEAR = "clear"
     HISTORY = "history"

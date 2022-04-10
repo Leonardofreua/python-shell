@@ -7,7 +7,6 @@ A simple linux shell simulator.
 * cd
 * pwd
 * ls (arguments: l, a)
-* rm
 * exit
 * clear
 * history
